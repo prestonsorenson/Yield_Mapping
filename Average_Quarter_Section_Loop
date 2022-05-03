@@ -40,7 +40,6 @@ var cloudMaskL457 = function(image) {
 var collection = 
     ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
     .filter(ee.Filter.calendarRange(1999,2021,'year'))
-    .filter(ee.Filter.calendarRange(8,8,'month'))
     .filterBounds(polygon)
     .map(cloudMaskL457);
 
@@ -62,7 +61,7 @@ var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_crop
 //time periods
 var interval = 1;
 var increment = 'month';
-var start = '1999-05-01';
+var start = '1999-07-01';
 
 // make a list of start years
 var startDate = ee.Date(start);
@@ -79,25 +78,35 @@ var reducer = ee.Reducer.mean().combine({
 });
 
 
-// make a composite (mean image) of the images of March and clip to the geometry
+// make a composite (mean image) of the images monthly
 var composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = NDVI.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
-  // add the mean to every image
-  var filt_col2 = filtCol.median();
-  var meanImage = filt_col2.mask(cropmask);
-  var meanVal = meanImage.reduceRegions({
+  // add the median to every image
+  var meanImage = filtCol.median().mask(cropmask);
+  return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
+}));
+
+print(composites);
+
+//reducer
+var reducer = ee.Reducer.mean().combine({
+  reducer2: ee.Reducer.stdDev(),
+  sharedInputs: true
+});
+
+var reduced = composites.map(function(image){
+  return image.reduceRegions({
     collection: qrts,
     reducer: reducer,
     scale:30,
     tileScale: 4,
   });
-  return ee.Image(meanImage.setMulti(meanVal)).set('system:time_start', ee.Date(startYear).millis());
-}));
+});
 
 //export table
 // so you can export it as a table
 Export.table.toDrive({
-    collection: composites, 
+    collection: reduced, 
     description: 'ndvi_med_monthly_1999_2021', 
     folder: 'yield_mapping', 
     fileNamePrefix: 'ndvi_med_monthly_1999_2021', 
