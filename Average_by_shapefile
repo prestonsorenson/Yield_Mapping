@@ -57,6 +57,22 @@ var NDVI = collection.select(['nd']);
 var NDVImed = NDVI.median(); 
 
 //average by quarter section
-var qrts = ee.FeatureCollection('users/ptsorens/SK_QRTS_South_4326');
-qrts = qrts.geometry();
+var medians = NDVImed.reduceRegions({
+  collection: qrts,
+  reducer: ee.Reducer.median(),
+  scale:30,
+});
+
+//export table
+// the resulting mean is a FeatureCollection
+// so you can export it as a table
+Export.table.toDrive({
+    collection: medians, 
+    description: 'ndvi_july', 
+    folder: 'yield_mapping', 
+    fileNamePrefix: 'ndvi_median', 
+    fileFormat: 'CSV'
+});
+
+
 
