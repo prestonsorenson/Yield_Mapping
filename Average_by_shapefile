@@ -45,7 +45,6 @@ var collection =
     .map(cloudMaskL457);
 
 
-
 // Function to calculate and add an NDVI band
 var addNDVI = function(image) {
 return image.addBands(image.normalizedDifference(['B4', 'B3']));
@@ -56,23 +55,34 @@ var collection = collection.map(addNDVI);
 var NDVI = collection.select(['nd']);
 var NDVImed = NDVI.median(); 
 
+print(NDVImed);
+
+//mask by crop area
+var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask");
+
+var NDVImed = NDVImed.mask(cropmask);
+
+
 //average by quarter section
+var reducer = ee.Reducer.mean().combine({
+  reducer2: ee.Reducer.stdDev(),
+  sharedInputs: true
+});
+
 var medians = NDVImed.reduceRegions({
   collection: qrts,
-  reducer: ee.Reducer.median(),
+  reducer: reducer,
   scale:30,
 });
+
 
 //export table
 // the resulting mean is a FeatureCollection
 // so you can export it as a table
 Export.table.toDrive({
     collection: medians, 
-    description: 'ndvi_july', 
+    description: 'ndvi_med_jul_1999_2021', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'ndvi_median', 
+    fileNamePrefix: 'ndvi_med_jul_1999_2021', 
     fileFormat: 'CSV'
 });
-
-
-
