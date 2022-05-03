@@ -1,3 +1,6 @@
+//import quarter sections
+var qrts = ee.FeatureCollection("users/ptsorens/SK_QRTS_South_4326");
+
 // Get average values per polygon
 
 // Filter an image collection by date and region to make a
