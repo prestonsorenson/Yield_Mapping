@@ -23,7 +23,7 @@ var polygon = ee.Geometry.Polygon({
  * @return {ee.Image} Cloudmasked Landsat image
  */
 var cloudMaskL457 = function(image) {
-  var qa = image.select('pixel_qa');
+  var qa = image.select('QA_PIXEL');
   // If the cloud bit (5) is set and the cloud confidence (7) is high
   // or the cloud shadow bit is set (3), then it's a bad pixel.
   var cloud = qa.bitwiseAnd(1 << 5)
@@ -38,16 +38,17 @@ var cloudMaskL457 = function(image) {
 // the bounds of the FeatureCollection.
 
 var collection = 
-    ee.ImageCollection('LANDSAT/LE07/C01/T2_SR')
+    ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
     .filter(ee.Filter.calendarRange(1999,2021,'year'))
-    .filter(ee.Filter.calendarRange(7,7,'month'))
+    .filter(ee.Filter.calendarRange(5,5,'month'))
     .filterBounds(polygon)
     .map(cloudMaskL457);
 
 
+
 // Function to calculate and add an NDVI band
 var addNDVI = function(image) {
-return image.addBands(image.normalizedDifference(['B4', 'B3']));
+return image.addBands(image.normalizedDifference(['SR_B4', 'SR_B3']));
 };
 
 var collection = collection.map(addNDVI);
@@ -61,6 +62,13 @@ print(NDVImed);
 var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask");
 
 var NDVImed = NDVImed.mask(cropmask);
+
+// Create palettes for display of NDVI
+var ndvi_pal = ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#d9ef8b',
+'#a6d96a'];
+
+// Display NDVI results on map
+Map.addLayer(NDVImed.clip(polygon), {min: 0, max:0.5, palette: ndvi_pal}, 'NDVI');
 
 
 //average by quarter section
@@ -81,8 +89,8 @@ var medians = NDVImed.reduceRegions({
 // so you can export it as a table
 Export.table.toDrive({
     collection: medians, 
-    description: 'ndvi_med_jul_1999_2021', 
+    description: 'ndvi_med_may_1999_2021', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'ndvi_med_jul_1999_2021', 
+    fileNamePrefix: 'ndvi_med_may_1999_2021', 
     fileFormat: 'CSV'
 });
