@@ -1,5 +1,3 @@
-//Error: Unable to use a collection in an algorithm that requires a feature or image. This may happen when trying to use a collection of collections where a collection of features is expected; use flatten, or map a function to convert inner collections to features. Use clipToCollection (instead of clip) to clip an image to a collection. (Error code: 3)
-
 //import quarter sections
 var qrts = ee.FeatureCollection("users/ptsorens/SK_QRTS_South_4326");
 
@@ -103,7 +101,7 @@ var reduced = composites.map(function(image){
     scale:30,
     tileScale: 4,
   });
-});
+}).flatten();
 
 //export table
 // so you can export it as a table
