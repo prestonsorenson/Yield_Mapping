@@ -22,7 +22,7 @@ var polygon_sub = ee.Geometry.Polygon({
   geodesic: false
 });
 
-var qrts=qrts.filterBounds(polygon_sub);
+//var qrts=qrts.filterBounds(polygon_sub);
 
 //Cloud Mask
 /**
@@ -45,7 +45,7 @@ var cloudMaskL457 = function(image) {
 
 // Create a Landsat 7 composites filter by
 // the bounds of the FeatureCollection.
-var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask").not();
+var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask");
 
 var crop_masking = function(image){
   return image.updateMask(cropmask);
@@ -69,13 +69,10 @@ var collection = collection.map(addNDVI);
 
 var NDVI = collection.select(['nd']);
 
-
-//mask by crop area
-
 //time periods
 var interval = 1;
 var increment = 'month';
-var start = '1999-07-01';
+var start = '1999-01-01';
 
 // make a list of start years
 var startDate = ee.Date(start);
