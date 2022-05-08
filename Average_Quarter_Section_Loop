@@ -50,7 +50,7 @@ var collection =
     .filterBounds(polygon)
     .map(cloudMaskL457);
 
-//var qrts=qrts.filterBounds(polygon_sub);
+var qrts=qrts.filterBounds(polygon_sub);
 
 // Function to calculate and add an NDVI band
 var addNDVI = function(image) {
@@ -110,12 +110,40 @@ var reduced = composites.map(function(image){
   });
 }).flatten();
 
+var desirable_fields = ['system:index', 'LEGALLAND', 'mean', 'stdDev'];
+
 //export table
 // so you can export it as a table
 Export.table.toDrive({
-    collection: reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
+    collection: reduced, 
     description: 'ndvi_med_monthly_2001', 
     folder: 'yield_mapping', 
     fileNamePrefix: 'ndvi_med_monthly_2001', 
     fileFormat: 'CSV'
-});
+    });
+
+
+// Add reducer output to the Features in the collection.
+function protected_areas (image, select_country) {var pas = image.reduceRegions({
+  collection: select_country,
+  reducer: ee.Reducer.frequencyHistogram(),
+  scale: 30,
+}); return pas.map(function(feature){
+  var dict = ee.Dictionary(feature.get('histogram'))
+  feature = feature.set(dict).setGeometry(null)
+  return (feature)})
+} // appends output from histogram into separate columns
+
+// export function
+function export_table (table, description, date, selectors) { 
+  var em = Export.table.toDrive({
+    collection: ee.FeatureCollection(table),
+    description: region+'_'+description+'_'+date,
+    folder: region,
+    selectors: desirable_fields
+});return em}
+
+// call export function on reducers
+var pas_l7_export = export_table(protected_areas(l7, select_country), 'protected_areas', date_l7)
+
+
