@@ -22,7 +22,7 @@ var polygon_sub = ee.Geometry.Polygon({
   geodesic: false
 });
 
-//var qrts=qrts.filterBounds(polygon_sub);
+var qrts=qrts.filterBounds(polygon_sub);
 
 //Cloud Mask
 /**
@@ -42,14 +42,23 @@ var cloudMaskL457 = function(image) {
   return image.updateMask(cloud.not()).updateMask(mask2);
 };
 
+
 // Create a Landsat 7 composites filter by
 // the bounds of the FeatureCollection.
+var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask").not();
+
+var crop_masking = function(image){
+  return image.updateMask(cropmask);
+};
+
 
 var collection = 
     ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
-    .filter(ee.Filter.calendarRange(2001,2001,'year'))
+    .filter(ee.Filter.calendarRange(1999,1999,'year'))
     .filterBounds(polygon)
-    .map(cloudMaskL457);
+    .map(cloudMaskL457)
+    .map(crop_masking)
+    ;
 
 // Function to calculate and add an NDVI band
 var addNDVI = function(image) {
@@ -62,18 +71,17 @@ var NDVI = collection.select(['nd']);
 
 
 //mask by crop area
-var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask");
 
 //time periods
 var interval = 1;
 var increment = 'month';
-var start = '2001-01-01';
+var start = '1999-07-01';
 
 // make a list of start years
 var startDate = ee.Date(start);
 var secondDate = startDate.advance(interval, increment).millis();
 var increase = secondDate.subtract(startDate.millis());
-var list = ee.List.sequence(startDate.millis(), ee.Date('2001-12-31').millis(), increase);
+var list = ee.List.sequence(startDate.millis(), ee.Date('1999-12-31').millis(), increase);
 
 print(list);
 
@@ -88,7 +96,7 @@ var reducer = ee.Reducer.mean().combine({
 var composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = NDVI.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
   // add the median to every image
-  var meanImage = filtCol.median().mask(cropmask);
+  var meanImage = filtCol.median();
   return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
 }));
 
@@ -120,8 +128,8 @@ var reduced = reduced.map(drop_feature);
 // so you can export it as a table
 Export.table.toDrive({
     collection: reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
-    description: 'ndvi_med_monthly_2001', 
+    description: 'ndvi_med_monthly_1999', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'ndvi_med_monthly_2001', 
+    fileNamePrefix: 'ndvi_med_monthly_1999', 
     fileFormat: 'CSV'
 });
