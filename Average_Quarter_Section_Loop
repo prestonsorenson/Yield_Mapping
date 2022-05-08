@@ -16,6 +16,13 @@ var polygon = ee.Geometry.Polygon({
   geodesic: false
 });
 
+var polygon_sub = ee.Geometry.Polygon({
+  coords: [[[-108.00, 51.00], [-108.00, 52.00], [-107.00, 52.00], [-107.00, 51.00]
+  ]],
+  geodesic: false
+});
+
+
 //Cloud Mask
 /**
  * Function to mask clouds based on the pixel_qa band of Landsat SR data.
@@ -39,11 +46,11 @@ var cloudMaskL457 = function(image) {
 
 var collection = 
     ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
-    .filter(ee.Filter.calendarRange(1999,2021,'year'))
+    .filter(ee.Filter.calendarRange(2001,2001,'year'))
     .filterBounds(polygon)
     .map(cloudMaskL457);
 
-
+//var qrts=qrts.filterBounds(polygon_sub);
 
 // Function to calculate and add an NDVI band
 var addNDVI = function(image) {
@@ -61,13 +68,13 @@ var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_crop
 //time periods
 var interval = 1;
 var increment = 'month';
-var start = '1999-07-01';
+var start = '2001-01-01';
 
 // make a list of start years
 var startDate = ee.Date(start);
 var secondDate = startDate.advance(interval, increment).millis();
 var increase = secondDate.subtract(startDate.millis());
-var list = ee.List.sequence(startDate.millis(), ee.Date('2021-10-01').millis(), increase);
+var list = ee.List.sequence(startDate.millis(), ee.Date('2001-12-31').millis(), increase);
 
 print(list);
 
@@ -106,9 +113,9 @@ var reduced = composites.map(function(image){
 //export table
 // so you can export it as a table
 Export.table.toDrive({
-    collection: reduced, 
-    description: 'ndvi_med_monthly_1999_2021', 
+    collection: reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
+    description: 'ndvi_med_monthly_2001', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'ndvi_med_monthly_1999_2021', 
+    fileNamePrefix: 'ndvi_med_monthly_2001', 
     fileFormat: 'CSV'
 });
