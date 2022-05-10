@@ -6,8 +6,6 @@ var qrts = ee.FeatureCollection("users/ptsorens/SK_QRTS_South_4326");
 // Filter an image collection by date and region to make a
 // median pixel composite.
 //
-// See also: ClippedComposite, which crops the output image
-// instead of filtering the input collection.
 
 // Filter to only include images within a defined area.
 var polygon = ee.Geometry.Polygon({
@@ -24,19 +22,6 @@ var polygon_sub = ee.Geometry.Polygon({
 
 //var qrts=qrts.filterBounds(polygon_sub);
 
-//Cloud Mask
-/**
- * Function to mask clouds based on the pixel_qa band of Landsat SR data.
- * @param {ee.Image} image Input Landsat SR image
- * @return {ee.Image} Cloudmasked Landsat image
- */
-// Create a Landsat 7 composites filter by
-// the bounds of the FeatureCollection.
-var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask");
-
-var crop_masking = function(image){
-  return image.updateMask(cropmask);
-};
 
 // Daily mean 2m air temperature
 var era5_2mt = ee.ImageCollection('ECMWF/ERA5/DAILY')
