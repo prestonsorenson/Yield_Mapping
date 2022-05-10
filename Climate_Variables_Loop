@@ -22,7 +22,7 @@ var polygon_sub = ee.Geometry.Polygon({
   geodesic: false
 });
 
-var qrts=qrts.filterBounds(polygon_sub);
+//var qrts=qrts.filterBounds(polygon_sub);
 
 //Cloud Mask
 /**
@@ -131,8 +131,8 @@ Export.table.toDrive({
 
 Export.table.toDrive({
     collection: precip_reduced.select(['system:index', 'LEGALLAND', 'median']), 
-    description: 'precip_med_monthly_2000', 
+    description: 'precip_sum_monthly_2000', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'precip_med_monthly_2000', 
+    fileNamePrefix: 'precip_sum_monthly_2000', 
     fileFormat: 'CSV'
 });
