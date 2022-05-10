@@ -71,7 +71,7 @@ var temps = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = era5_2mt.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
   // add the median to every image
   var meanImage = filtCol.median();
-  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:100});
+  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:250});
   return ee.Image(meanImage_bicubic).set('system:time_start', ee.Date(startYear).millis());
 }));
 
@@ -82,7 +82,7 @@ var precip = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = era5_tp.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
   // add the median to every image
   var meanImage = filtCol.sum();
-  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:100});
+  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:250});
   return ee.Image(meanImage_bicubic).set('system:time_start', ee.Date(startYear).millis());
 }));
 
@@ -96,7 +96,7 @@ var temp_reduced = temps.map(function(image){
   return image.reduceRegions({
     collection: qrts,
     reducer: reducer,
-    scale:30,
+    scale:250,
     tileScale: 4,
   }); 
 }).flatten();
@@ -105,7 +105,7 @@ var precip_reduced = precip.map(function(image){
   return image.reduceRegions({
     collection: qrts,
     reducer: reducer,
-    scale:30,
+    scale:250,
     tileScale: 4,
   }); 
 }).flatten();
