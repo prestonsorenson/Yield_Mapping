@@ -1,0 +1,154 @@
+//import quarter sections
+var qrts = ee.FeatureCollection("users/ptsorens/SK_QRTS_South_4326");
+
+// Get average values per polygon
+
+// Filter an image collection by date and region to make a
+// median pixel composite.
+//
+
+// Filter to only include images within a defined area.
+var polygon = ee.Geometry.Polygon({
+  coords: [[[-110.00, 49.00], [-110.00, 55.00], [-101.00, 55.00], [-101.00, 49.00]
+  ]],
+  geodesic: false
+});
+
+var polygon_sub = ee.Geometry.Polygon({
+  coords: [[[-108.00, 51.00], [-108.00, 52.00], [-107.00, 52.00], [-107.00, 51.00]
+  ]],
+  geodesic: false
+});
+
+//var qrts=qrts.filterBounds(polygon_sub);
+
+
+// Daily mean 2m air temperature
+var daymet_tmin = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+                   .select('tmin')
+                   .filter(ee.Filter.calendarRange(2000,2000,'year'))
+                   .filterBounds(polygon)
+                   ;
+
+var daymet_tmax = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+                   .select('tmax')
+                   .filter(ee.Filter.calendarRange(2000,2000,'year'))
+                   .filterBounds(polygon)
+                   ;
+
+
+// Daily total precipitation sums
+var daymet_precip = ee.ImageCollection('NASA/ORNL/DAYMET_V4')
+                  .select('prcp')
+                   .filter(ee.Filter.calendarRange(2000,2000,'year'))
+                   .filterBounds(polygon)
+                   ;
+
+
+//time periods
+var interval = 1;
+var increment = 'month';
+var start = '2000-01-01';
+
+// make a list of start years
+var startDate = ee.Date(start);
+var secondDate = startDate.advance(interval, increment).millis();
+var increase = secondDate.subtract(startDate.millis());
+var list = ee.List.sequence(startDate.millis(), ee.Date('2000-12-31').millis(), increase);
+
+print(list);
+
+// make a composite (mean temp) of the images monthly
+var tmin = ee.ImageCollection.fromImages(list.map(function(startYear){
+  var filtCol = daymet_tmin.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
+  // add the median to every image
+  var meanImage = filtCol.median();
+  return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
+}));
+
+print(tmin);
+
+var tmax = ee.ImageCollection.fromImages(list.map(function(startYear){
+  var filtCol = daymet_tmax.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
+  // add the median to every image
+  var meanImage = filtCol.median();
+  return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
+}));
+
+print(tmax);
+
+
+//make a composite of total precip
+var precip = ee.ImageCollection.fromImages(list.map(function(startYear){
+  var filtCol = daymet_precip.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
+  // add the median to every image
+  var meanImage = filtCol.sum();
+  return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
+}));
+
+
+//reducer
+var reducer = ee.Reducer.median();
+
+//reducer
+var tmin_reduced = tmin.map(function(image){
+  return image.reduceRegions({
+    collection: qrts,
+    reducer: reducer,
+    scale:1000,
+    tileScale: 4,
+  }); 
+}).flatten();
+
+var tmax_reduced = tmax.map(function(image){
+  return image.reduceRegions({
+    collection: qrts,
+    reducer: reducer,
+    scale:1000,
+    tileScale: 4,
+  }); 
+}).flatten();
+
+var precip_reduced = precip.map(function(image){
+  return image.reduceRegions({
+    collection: qrts,
+    reducer: reducer,
+    scale:1000,
+    tileScale: 4,
+  }); 
+}).flatten();
+
+//drop .geo
+var drop_feature = function(feature){
+  return feature.setGeometry(null);
+};
+
+var tmin_reduced = tmin_reduced.map(drop_feature);
+var tmax_reduced = tmax_reduced.map(drop_feature);
+var precip_reduced = precip_reduced.map(drop_feature);
+
+//export table
+// so you can export it as a table
+Export.table.toDrive({
+    collection: tmin_reduced.select(['system:index', 'LEGALLAND', 'median']), 
+    description: 'tmin_med_monthly_2000', 
+    folder: 'yield_mapping', 
+    fileNamePrefix: 'tmin_med_monthly_2000', 
+    fileFormat: 'CSV'
+});
+
+Export.table.toDrive({
+    collection: tmax_reduced.select(['system:index', 'LEGALLAND', 'median']), 
+    description: 'tmax_med_monthly_2000', 
+    folder: 'yield_mapping', 
+    fileNamePrefix: 'tmax_med_monthly_2000', 
+    fileFormat: 'CSV'
+});
+
+Export.table.toDrive({
+    collection: precip_reduced.select(['system:index', 'LEGALLAND', 'median']), 
+    description: 'precip_sum_monthly_2000', 
+    folder: 'yield_mapping', 
+    fileNamePrefix: 'precip_sum_monthly_2000', 
+    fileFormat: 'CSV'
+});
