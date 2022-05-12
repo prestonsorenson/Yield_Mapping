@@ -6,6 +6,8 @@ var qrts = ee.FeatureCollection("users/ptsorens/SK_QRTS_South_4326");
 // Filter an image collection by date and region to make a
 // median pixel composite.
 //
+// See also: ClippedComposite, which crops the output image
+// instead of filtering the input collection.
 
 // Filter to only include images within a defined area.
 var polygon = ee.Geometry.Polygon({
@@ -22,75 +24,92 @@ var polygon_sub = ee.Geometry.Polygon({
 
 //var qrts=qrts.filterBounds(polygon_sub);
 
+//Cloud Mask
+/**
+ * Function to mask clouds based on the pixel_qa band of Landsat SR data.
+ * @param {ee.Image} image Input Landsat SR image
+ * @return {ee.Image} Cloudmasked Landsat image
+ */
+var cloudMaskL457 = function(image) {
+  var qa = image.select('QA_PIXEL');
+  // If the cloud bit (5) is set and the cloud confidence (7) is high
+  // or the cloud shadow bit is set (3), then it's a bad pixel.
+  var cloud = qa.bitwiseAnd(1 << 5)
+                  .and(qa.bitwiseAnd(1 << 7))
+                  .or(qa.bitwiseAnd(1 << 3));
+  // Remove edge pixels that don't occur in all bands
+  var mask2 = image.mask().reduce(ee.Reducer.min());
+  return image.updateMask(cloud.not()).updateMask(mask2);
+};
 
-// Daily mean 2m air temperature
-var era5_2mt = ee.ImageCollection('ECMWF/ERA5/DAILY')
-                   .select('mean_2m_air_temperature')
-                   .filter(ee.Filter.calendarRange(2000,2000,'year'))
-                   .filterBounds(polygon)
-                   ;
-                   
-// Daily total precipitation sums
-var era5_tp = ee.ImageCollection('ECMWF/ERA5/DAILY')
-                  .select('total_precipitation')
-                   .filter(ee.Filter.calendarRange(2000,2000,'year'))
-                   .filterBounds(polygon)
-                   ;
 
+// Create a Landsat 7 composites filter by
+// the bounds of the FeatureCollection.
+var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask");
+
+var crop_masking = function(image){
+  return image.updateMask(cropmask);
+};
+
+
+var collection = 
+    ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
+    .filter(ee.Filter.calendarRange(1999,1999,'year'))
+    .filterBounds(polygon)
+    .map(cloudMaskL457)
+    .map(crop_masking)
+    ;
+
+// Function to calculate and add an NDVI band
+var addNDVI = function(image) {
+return image.addBands(image.normalizedDifference(['SR_B4', 'SR_B3']));
+};
+
+var collection = collection.map(addNDVI);
+
+var NDVI = collection.select(['nd']);
 
 //time periods
 var interval = 1;
 var increment = 'month';
-var start = '2000-01-01';
+var start = '1999-01-01';
 
 // make a list of start years
 var startDate = ee.Date(start);
 var secondDate = startDate.advance(interval, increment).millis();
 var increase = secondDate.subtract(startDate.millis());
-var list = ee.List.sequence(startDate.millis(), ee.Date('2000-12-31').millis(), increase);
+var list = ee.List.sequence(startDate.millis(), ee.Date('1999-12-31').millis(), increase);
 
 print(list);
 
-// make a composite (mean temp) of the images monthly
-var temps = ee.ImageCollection.fromImages(list.map(function(startYear){
-  var filtCol = era5_2mt.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
+//reducer
+var reducer = ee.Reducer.mean().combine({
+  reducer2: ee.Reducer.stdDev(),
+  sharedInputs: true
+});
+
+
+// make a composite (mean image) of the images monthly
+var composites = ee.ImageCollection.fromImages(list.map(function(startYear){
+  var filtCol = NDVI.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
   // add the median to every image
   var meanImage = filtCol.median();
-  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:250});
-  return ee.Image(meanImage_bicubic).set('system:time_start', ee.Date(startYear).millis());
+  return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
 }));
 
-print(temps);
-
-//make a composite of total precip
-var precip = ee.ImageCollection.fromImages(list.map(function(startYear){
-  var filtCol = era5_tp.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
-  // add the median to every image
-  var meanImage = filtCol.sum();
-  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:250});
-  return ee.Image(meanImage_bicubic).set('system:time_start', ee.Date(startYear).millis());
-}));
-
-print(temps);
+print(composites);
 
 //reducer
-var reducer = ee.Reducer.median();
+var reducer = ee.Reducer.mean().combine({
+  reducer2: ee.Reducer.stdDev(),
+  sharedInputs: true
+});
 
-//reducer
-var temp_reduced = temps.map(function(image){
+var reduced = composites.map(function(image){
   return image.reduceRegions({
     collection: qrts,
     reducer: reducer,
-    scale:250,
-    tileScale: 4,
-  }); 
-}).flatten();
-
-var precip_reduced = precip.map(function(image){
-  return image.reduceRegions({
-    collection: qrts,
-    reducer: reducer,
-    scale:250,
+    scale:30,
     tileScale: 4,
   }); 
 }).flatten();
@@ -100,24 +119,14 @@ var drop_feature = function(feature){
   return feature.setGeometry(null);
 };
 
-var temp_reduced = temp_reduced.map(drop_feature);
-var precip_reduced = precip_reduced.map(drop_feature);
+var reduced = reduced.map(drop_feature);
 
 //export table
 // so you can export it as a table
 Export.table.toDrive({
-    collection: temp_reduced.select(['system:index', 'LEGALLAND', 'median']), 
-    description: 'temp_med_monthly_2000', 
+    collection: reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
+    description: 'ndvi_med_monthly_1999', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'temp_med_monthly_2000', 
-    fileFormat: 'CSV'
-});
-
-
-Export.table.toDrive({
-    collection: precip_reduced.select(['system:index', 'LEGALLAND', 'median']), 
-    description: 'precip_sum_monthly_2000', 
-    folder: 'yield_mapping', 
-    fileNamePrefix: 'precip_sum_monthly_2000', 
+    fileNamePrefix: 'ndvi_med_monthly_1999', 
     fileFormat: 'CSV'
 });
