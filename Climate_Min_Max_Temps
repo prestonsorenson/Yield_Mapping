@@ -1,0 +1,144 @@
+//import quarter sections
+var qrts = ee.FeatureCollection("users/ptsorens/SK_QRTS_South_4326");
+
+// Get average values per polygon
+
+// Filter an image collection by date and region to make a
+// median pixel composite.
+//
+// See also: ClippedComposite, which crops the output image
+// instead of filtering the input collection.
+
+// Filter to only include images within a defined area.
+var polygon = ee.Geometry.Polygon({
+  coords: [[[-110.00, 49.00], [-110.00, 55.00], [-101.00, 55.00], [-101.00, 49.00]
+  ]],
+  geodesic: false
+});
+
+var polygon_sub = ee.Geometry.Polygon({
+  coords: [[[-108.00, 51.00], [-108.00, 52.00], [-107.00, 52.00], [-107.00, 51.00]
+  ]],
+  geodesic: false
+});
+
+//var qrts=qrts.filterBounds(polygon_sub);
+
+//Cloud Mask
+/**
+ * Function to mask clouds based on the pixel_qa band of Landsat SR data.
+ * @param {ee.Image} image Input Landsat SR image
+ * @return {ee.Image} Cloudmasked Landsat image
+ */
+// Create a Landsat 7 composites filter by
+// the bounds of the FeatureCollection.
+var cropmask = ee.Image("projects/just-amp-296821/assets/AAFC_cropMask/AAFC_croplandMask");
+
+var crop_masking = function(image){
+  return image.updateMask(cropmask);
+};
+
+// Daily mean 2m air temperature
+var era5_min = ee.ImageCollection('ECMWF/ERA5/DAILY')
+                   .select('minimum_2m_air_temperature')
+                   .filterBounds(polygon)
+                   ;
+                   
+// Daily total precipitation sums
+var era5_max = ee.ImageCollection('ECMWF/ERA5/DAILY')
+                   .select('maximum_2m_air_temperature')
+                   .filterBounds(polygon)
+                   ;
+
+
+//time periods
+var interval = 1;
+var increment = 'month';
+var start = '1980-01-01';
+
+// make a list of start years
+var startDate = ee.Date(start);
+var secondDate = startDate.advance(interval, increment).millis();
+var increase = secondDate.subtract(startDate.millis());
+var list = ee.List.sequence(startDate.millis(), ee.Date('2000-12-31').millis(), increase);
+
+var list = ee.List.sequence(1,12);
+
+//.filter(ee.Filter.calendarRange(5,9,'month'))
+
+
+print(list);
+
+// make a composite (min temp) of the images monthly
+var temps_min = ee.ImageCollection.fromImages(list.map(function(month){
+  var filtCol = era5_min.filter(ee.Filter.calendarRange(month,month,'month'));
+  // add the median to every image
+  var meanImage = filtCol.median();
+  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:250});
+  return ee.Image(meanImage_bicubic).set('system:time_start', ee.Date(month).millis());
+}));
+
+print(temps_min);
+
+
+// make a composite (max temp) of the images monthly
+// make a composite (min temp) of the images monthly
+var temps_max = ee.ImageCollection.fromImages(list.map(function(month){
+  var filtCol = era5_max.filter(ee.Filter.calendarRange(month,month,'month'));
+  // add the median to every image
+  var meanImage = filtCol.median();
+  var meanImage_bicubic = meanImage.resample('bicubic').reproject({crs:"EPSG:26913", scale:250});
+  return ee.Image(meanImage_bicubic).set('system:time_start', ee.Date(month).millis());
+}));
+
+print(temps_min);
+
+//reducer
+var reducer = ee.Reducer.median();
+
+//reducer
+var temp_min_reduced = temps_min.map(function(image){
+  return image.reduceRegions({
+    collection: qrts,
+    reducer: reducer,
+    scale:250,
+    tileScale: 4,
+  }); 
+}).flatten();
+
+var temp_max_reduced = temps_max.map(function(image){
+  return image.reduceRegions({
+    collection: qrts,
+    reducer: reducer,
+    scale:250,
+    tileScale: 4,
+  }); 
+}).flatten();
+
+
+//drop .geo
+var drop_feature = function(feature){
+  return feature.setGeometry(null);
+};
+
+var temp_min_reduced = temp_min_reduced.map(drop_feature);
+var temp_max_reduced = temp_max_reduced.map(drop_feature);
+
+//export table
+// so you can export it as a table
+Export.table.toDrive({
+    collection: temp_min_reduced.select(['system:index', 'LEGALLAND', 'median']), 
+    description: 'temp_min_monthly', 
+    folder: 'min_max', 
+    fileNamePrefix: 'temp_min_monthly_2000', 
+    fileFormat: 'CSV'
+});
+
+
+Export.table.toDrive({
+    collection: temp_min_reduced.select(['system:index', 'LEGALLAND', 'median']), 
+    description: 'temp_max_monthly', 
+    folder: 'min_max', 
+    fileNamePrefix: 'temp_max_monthly_2000', 
+    fileFormat: 'CSV'
+});
