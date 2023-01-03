@@ -22,7 +22,7 @@ var polygon_sub = ee.Geometry.Polygon({
   geodesic: false
 });
 
-//var qrts=qrts.filterBounds(polygon_sub);
+var qrts=qrts.filterBounds(polygon_sub);
 
 //Cloud Mask
 /**
@@ -44,15 +44,15 @@ var cloudMaskL457 = function(image) {
 
 
 //set dates
-var start = '1985-01-01';
-var endDate = ee.Date('1985-12-31');
+var start = '1985-04-01';
+var endDate = ee.Date('1985-10-31');
 
 // Create a Landsat 5 composites filter by
 // the bounds of the FeatureCollection.
 var collection = 
     ee.ImageCollection('LANDSAT/LT05/C02/T1_L2')
     .filter(ee.Filter.calendarRange(1985,1985,'year'))
-    .filterBounds(polygon)
+    .filterBounds(polygon_sub)
     .map(cloudMaskL457)
     ;
 
@@ -188,7 +188,7 @@ var nbr_reduced = nbr_reduced.map(drop_feature);
 //export table
 // so you can export it as a table
 Export.table.toDrive({
-    collection: ndvi_reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
+    collection: ndvi_reduced.select(['system:index', 'LEGALLAND', 'median']), 
     description: 'ndvi_med_monthly_l5_1985', 
     folder: 'yield_mapping', 
     fileNamePrefix: 'ndvi_med_monthly_l5_1985', 
@@ -196,7 +196,7 @@ Export.table.toDrive({
 });
 
 Export.table.toDrive({
-    collection: NDI5_reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
+    collection: NDI5_reduced.select(['system:index', 'LEGALLAND', 'median']), 
     description: 'NDI5_med_monthly_l5_1985', 
     folder: 'yield_mapping', 
     fileNamePrefix: 'NDI5_med_monthly_l5_1985', 
@@ -204,7 +204,7 @@ Export.table.toDrive({
 });
 
 Export.table.toDrive({
-    collection: NDI7_reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
+    collection: NDI7_reduced.select(['system:index', 'LEGALLAND', 'median']), 
     description: 'NDI7_med_monthly_l5_1985', 
     folder: 'yield_mapping', 
     fileNamePrefix: 'NDI7_med_monthly_l5_1985', 
@@ -212,7 +212,7 @@ Export.table.toDrive({
 });
 
 Export.table.toDrive({
-    collection: nbr_reduced.select(['system:index', 'LEGALLAND', 'mean', 'stdDev']), 
+    collection: nbr_reduced.select(['system:index', 'LEGALLAND', 'median']), 
     description: 'nbr_med_monthly_l5_1985', 
     folder: 'yield_mapping', 
     fileNamePrefix: 'nbr_med_monthly_l5_1985', 
