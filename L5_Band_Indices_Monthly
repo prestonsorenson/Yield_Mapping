@@ -17,7 +17,7 @@ var polygon = ee.Geometry.Polygon({
 });
 
 var polygon_sub = ee.Geometry.Polygon({
-  coords: [[[-108.00, 51.00], [-108.00, 52.00], [-107.00, 52.00], [-107.00, 51.00]
+  coords: [[[-110.00, 49.00], [-110.00, 50.00], [-101.00, 50.00], [-101.00, 49.00]
   ]],
   geodesic: false
 });
@@ -44,14 +44,14 @@ var cloudMaskL457 = function(image) {
 
 
 //set dates
-var start = '1985-04-01';
-var endDate = ee.Date('1985-10-31');
+var start = '1984-01-01';
+var endDate = ee.Date('2011-11-30');
 
 // Create a Landsat 5 composites filter by
 // the bounds of the FeatureCollection.
 var collection = 
     ee.ImageCollection('LANDSAT/LT05/C02/T1_L2')
-    .filter(ee.Filter.calendarRange(1985,1985,'year'))
+    .filter(ee.Filter.calendarRange(1985,2011,'year'))
     .filterBounds(polygon_sub)
     .map(cloudMaskL457)
     ;
@@ -97,6 +97,7 @@ var secondDate = startDate.advance(interval, increment).millis();
 var increase = secondDate.subtract(startDate.millis());
 var list = ee.List.sequence(startDate.millis(), endDate.millis(), increase);
 
+print(startDate);
 print(list);
 
 // make a composite (mean image) of the images monthly
@@ -133,6 +134,39 @@ var nbr_composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   var meanImage = filtCol.median();
   return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
 }));
+
+print(nbr_composites);
+
+//drop empty bands
+var ndvi_composites=ndvi_composites.map(function (image) {
+    var index = image.getString('system:index');
+    var include = image.bandNames().size().neq(0);
+    return ee.Algorithms.If(include, image, null);
+  }, true);
+
+print(ndvi_composites);
+
+var NDI5_composites=NDI5_composites.map(function (image) {
+    var index = image.getString('system:index');
+    var include = image.bandNames().size().neq(0);
+    return ee.Algorithms.If(include, image, null);
+  }, true);
+
+print(NDI5_composites);
+
+var NDI7_composites=NDI7_composites.map(function (image) {
+    var index = image.getString('system:index');
+    var include = image.bandNames().size().neq(0);
+    return ee.Algorithms.If(include, image, null);
+  }, true);
+
+print(NDI7_composites);
+
+var nbr_composites=nbr_composites.map(function (image) {
+    var index = image.getString('system:index');
+    var include = image.bandNames().size().neq(0);
+    return ee.Algorithms.If(include, image, null);
+  }, true);
 
 print(nbr_composites);
 
@@ -189,32 +223,32 @@ var nbr_reduced = nbr_reduced.map(drop_feature);
 // so you can export it as a table
 Export.table.toDrive({
     collection: ndvi_reduced.select(['system:index', 'LEGALLAND', 'median']), 
-    description: 'ndvi_med_monthly_l5_1985', 
+    description: 'ndvi_med_monthly_l5_49_50', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'ndvi_med_monthly_l5_1985', 
+    fileNamePrefix: 'ndvi_med_monthly_l5_49_50', 
     fileFormat: 'CSV'
 });
 
 Export.table.toDrive({
     collection: NDI5_reduced.select(['system:index', 'LEGALLAND', 'median']), 
-    description: 'NDI5_med_monthly_l5_1985', 
+    description: 'NDI5_med_monthly_l5_49_50', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'NDI5_med_monthly_l5_1985', 
+    fileNamePrefix: 'NDI5_med_monthly_l5_49_50', 
     fileFormat: 'CSV'
 });
 
 Export.table.toDrive({
     collection: NDI7_reduced.select(['system:index', 'LEGALLAND', 'median']), 
-    description: 'NDI7_med_monthly_l5_1985', 
+    description: 'NDI7_med_monthly_l5_49_50', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'NDI7_med_monthly_l5_1985', 
+    fileNamePrefix: 'NDI7_med_monthly_l5_49_50', 
     fileFormat: 'CSV'
 });
 
 Export.table.toDrive({
     collection: nbr_reduced.select(['system:index', 'LEGALLAND', 'median']), 
-    description: 'nbr_med_monthly_l5_1985', 
+    description: 'nbr_med_monthly_l5_49_50', 
     folder: 'yield_mapping', 
-    fileNamePrefix: 'nbr_med_monthly_l5_1985', 
+    fileNamePrefix: 'nbr_med_monthly_l5_49_50', 
     fileFormat: 'CSV'
 });
