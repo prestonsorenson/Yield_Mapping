@@ -43,7 +43,7 @@ var cloudMaskL457 = function(image) {
 };
 
 
-// Create a Landsat 7 composites filter by
+// Create a Landsat 5 composites filter by
 // the bounds of the FeatureCollection.
 var collection = 
     ee.ImageCollection('LANDSAT/LT05/C02/T1_L2')
@@ -73,7 +73,7 @@ var list = ee.List.sequence(startDate.millis(), ee.Date('2011-11-01').millis(), 
 
 print(list);
 
-// make a composite (mean image) of the images monthly
+// make a composite (median) of the images monthly
 var composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = NDVI.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
   // add the median to every image
