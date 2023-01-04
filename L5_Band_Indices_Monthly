@@ -17,7 +17,7 @@ var polygon = ee.Geometry.Polygon({
 });
 
 var polygon_sub = ee.Geometry.Polygon({
-  coords: [[[-110.00, 49.00], [-110.00, 50.00], [-101.00, 50.00], [-101.00, 49.00]
+  coords: [[[-110.00, 49.00], [-110.00, 49.25], [-101.00, 49.25], [-101.00, 49.00]
   ]],
   geodesic: false
 });
@@ -45,7 +45,7 @@ var cloudMaskL457 = function(image) {
 
 //set dates
 var start = '1984-01-01';
-var endDate = ee.Date('2011-11-30');
+var endDate = ee.Date('1985-12-31');
 
 // Create a Landsat 5 composites filter by
 // the bounds of the FeatureCollection.
@@ -55,6 +55,12 @@ var collection =
     .filterBounds(polygon_sub)
     .map(cloudMaskL457)
     ;
+    
+    
+//resample to 300 m to speed processing
+var collection = collection.map(function(image){
+  return image.reproject({crs:"EPSG:4326", scale:300})});
+
 
 // Function to calculate and add an NDVI band
 var addNDVI = function(image) {
@@ -108,8 +114,6 @@ var ndvi_composites = ee.ImageCollection.fromImages(list.map(function(startYear)
   return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
 }));
 
-print(ndvi_composites);
-
 var NDI5_composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = NDI5.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
   // add the median to every image
@@ -117,7 +121,6 @@ var NDI5_composites = ee.ImageCollection.fromImages(list.map(function(startYear)
   return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
 }));
 
-print(NDI5_composites);
 
 var NDI7_composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = NDI7.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
@@ -126,7 +129,6 @@ var NDI7_composites = ee.ImageCollection.fromImages(list.map(function(startYear)
   return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
 }));
 
-print(NDI7_composites);
 
 var nbr_composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   var filtCol = nbr.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
@@ -135,39 +137,72 @@ var nbr_composites = ee.ImageCollection.fromImages(list.map(function(startYear){
   return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
 }));
 
-print(nbr_composites);
-
-//drop empty bands
-var ndvi_composites=ndvi_composites.map(function (image) {
-    var index = image.getString('system:index');
-    var include = image.bandNames().size().neq(0);
-    return ee.Algorithms.If(include, image, null);
-  }, true);
 
 print(ndvi_composites);
-
-var NDI5_composites=NDI5_composites.map(function (image) {
-    var index = image.getString('system:index');
-    var include = image.bandNames().size().neq(0);
-    return ee.Algorithms.If(include, image, null);
-  }, true);
-
 print(NDI5_composites);
-
-var NDI7_composites=NDI7_composites.map(function (image) {
-    var index = image.getString('system:index');
-    var include = image.bandNames().size().neq(0);
-    return ee.Algorithms.If(include, image, null);
-  }, true);
-
 print(NDI7_composites);
+print(nbr_composites);
 
-var nbr_composites=nbr_composites.map(function (image) {
-    var index = image.getString('system:index');
-    var include = image.bandNames().size().neq(0);
-    return ee.Algorithms.If(include, image, null);
-  }, true);
 
+//drop empty bands
+var ndvi_listOfImages = ndvi_composites.toList(ndvi_composites.size());
+
+var ndvi_newList = ndvi_listOfImages.map(function comprobeBandsNumber(ele){
+  var new_list = ee.List([]); 
+  var count = ee.Image(ele).bandNames().size();
+  var comp = ee.Algorithms.If(count.eq(1), ele, 0);
+  new_list = new_list.add(comp);
+  return new_list;
+  }).flatten();
+
+var NDI5_listOfImages = NDI5_composites.toList(NDI5_composites.size());
+
+var NDI5_newList = NDI5_listOfImages.map(function comprobeBandsNumber(ele){
+  var new_list = ee.List([]); 
+  var count = ee.Image(ele).bandNames().size();
+  var comp = ee.Algorithms.If(count.eq(1), ele, 0);
+  new_list = new_list.add(comp);
+  return new_list;
+  }).flatten();
+
+var NDI7_listOfImages = NDI7_composites.toList(NDI7_composites.size());
+
+var NDI7_newList = NDI7_listOfImages.map(function comprobeBandsNumber(ele){
+  var new_list = ee.List([]); 
+  var count = ee.Image(ele).bandNames().size();
+  var comp = ee.Algorithms.If(count.eq(1), ele, 0);
+  new_list = new_list.add(comp);
+  return new_list;
+  }).flatten();
+
+var nbr_listOfImages = nbr_composites.toList(nbr_composites.size());
+
+var nbr_newList = nbr_listOfImages.map(function comprobeBandsNumber(ele){
+  var new_list = ee.List([]); 
+  var count = ee.Image(ele).bandNames().size();
+  var comp = ee.Algorithms.If(count.eq(1), ele, 0);
+  new_list = new_list.add(comp);
+  return new_list;
+  }).flatten();
+
+
+
+//removing zeroes in new list
+ndvi_newList = ndvi_newList.removeAll([0]);
+NDI5_newList = NDI5_newList.removeAll([0]);
+NDI7_newList = NDI7_newList.removeAll([0]);
+nbr_newList = nbr_newList.removeAll([0]);
+
+
+//creating new collection
+var ndvi_composites = ee.ImageCollection(ndvi_newList);
+var NDI5_composites = ee.ImageCollection(NDI5_newList);
+var NDI7_composites = ee.ImageCollection(NDI7_newList);
+var nbr_composites = ee.ImageCollection(nbr_newList);
+
+print(ndvi_composites);
+print(NDI5_composites);
+print(NDI7_composites);
 print(nbr_composites);
 
 //reducer
