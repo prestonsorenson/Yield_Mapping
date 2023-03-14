@@ -1,0 +1,70 @@
+//import quarter sections
+var qrts = ee.FeatureCollection("users/ptsorens/SK_QRTS_South_4326");
+
+//ERA5 Daily Aggregates
+// Filter to only include images within a defined area.
+var polygon = ee.Geometry.Polygon({
+  coords: [[[-110.00, 49.00], [-110.00, 55.00], [-101.00, 55.00], [-101.00, 49.00]
+  ]],
+  geodesic: false
+});
+
+
+// Daily total precipitation sums
+var era5_tp = ee.ImageCollection('ECMWF/ERA5/DAILY')
+                  .select('total_precipitation')
+                   .filter(ee.Filter.calendarRange(1998,2020,'year'))
+                   .filter(ee.Filter.calendarRange(1,12,'month'))
+                   .filterBounds(polygon)
+                   ;
+
+
+
+//time periods
+var interval = 1;
+var increment = 'year';
+var start = '1998-01-01';
+
+// make a list of start years
+var startDate = ee.Date(start);
+var secondDate = startDate.advance(interval, increment).millis();
+var increase = secondDate.subtract(startDate.millis());
+var list = ee.List.sequence(startDate.millis(), ee.Date('2020-12-31').millis(), increase);
+
+print(list);
+
+//reducer
+var reducer = ee.Reducer.mean().combine({
+  reducer2: ee.Reducer.stdDev(),
+  sharedInputs: true
+});
+
+
+//calculate total precipitation per year
+
+// make a composite (mean image) of the images yearly
+var composites = ee.ImageCollection.fromImages(list.map(function(startYear){
+  var filtCol = era5_tp.filterDate(ee.Date(startYear), ee.Date(startYear).advance(interval, increment));
+  // add the median to every image
+  var meanImage = filtCol.sum();
+  return ee.Image(meanImage).set('system:time_start', ee.Date(startYear).millis());
+}));
+
+print(composites);
+
+var era5_tp=composites.toBands();
+
+//resample to 100 m pixels
+var era5_tp = era5_tp.resample('bicubic').reproject({crs:"EPSG:26913", scale:400});
+print(era5_tp);
+
+
+Export.image.toDrive({
+image: era5_tp, //replace with your image name variable
+description: 'sk_era5_tp_400m',
+scale: 400,
+maxPixels: 1e12,
+region: polygon, //polygon name that you have drawn at step 1
+folder:'sk_era5_tp_400m',
+crs: "EPSG:26913"
+});
