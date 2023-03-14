@@ -84,7 +84,7 @@ yield_wheat_adj=aggregate(yield_wheat_adj[,2], by=list(yield_wheat_adj$LEGALLAND
 colnames(yield_wheat_adj)=c('LEGALLAND', 'kg_ha_adj')
 
 #merge with soil properties
-yield_wheat=merge(yield_wheat, soil, by='LEGALLAND')
+yield_wheat=merge(yield_wheat_adj, soil, by='LEGALLAND')
 
 #remove na
 yield_wheat=yield_wheat[!is.na(yield_wheat$kg_ha_adj),]
@@ -130,7 +130,7 @@ yield_barley_adj=aggregate(yield_barley_adj[,2], by=list(yield_barley_adj$LEGALL
 colnames(yield_barley_adj)=c('LEGALLAND', 'kg_ha_adj')
 
 #merge with soil properties
-yield_barley=merge(yield_barley, soil, by='LEGALLAND')
+yield_barley=merge(yield_barley_adj, soil, by='LEGALLAND')
 
 #remove na
 yield_barley=yield_barley[!is.na(yield_barley$kg_ha_adj),]
@@ -176,7 +176,7 @@ colnames(yield_canola_adj)=c('LEGALLAND', 'kg_ha_adj')
 
 
 #merge with soil properties
-yield_canola=merge(yield_canola, soil, by='LEGALLAND')
+yield_canola=merge(yield_canola_adj, soil, by='LEGALLAND')
 
 #remove na
 yield_canola=yield_canola[!is.na(yield_canola$kg_ha_adj),]
@@ -221,7 +221,7 @@ yield_peas_adj=aggregate(yield_peas_adj[,2], by=list(yield_peas_adj$LEGALLAND), 
 colnames(yield_peas_adj)=c('LEGALLAND', 'kg_ha_adj')
 
 #merge with soil properties
-yield_peas=merge(yield_peas, soil, by='LEGALLAND')
+yield_peas=merge(yield_peas_adj, soil, by='LEGALLAND')
 
 #remove na
 yield_peas=yield_peas[!is.na(yield_peas$kg_ha_adj),]
