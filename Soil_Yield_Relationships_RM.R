@@ -44,6 +44,41 @@ colnames(yield_data)[3]='year'
 
 yield_data$id=paste(yield_data$LEGALLAND, yield_data$year, sep='_')
 
+#monthly NDVI
+ndvi_med=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/ndvi_med_1999_2020_monthly.csv')
+
+#climate data
+precip=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/precip_1999_2020_monthly.csv')
+tmin=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/tmin_1999_2020_monthly.csv')
+tmax=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/tmax_1999_2020_monthly.csv')
+
+ndvi_med=ndvi_med[,-1]
+precip=precip[,-1]
+tmin=tmin[,-1]
+tmax=tmax[,-1]
+
+colnames(ndvi_med)[1]='LEGALLAND'
+colnames(precip)[1]='LEGALLAND'
+colnames(tmin)[1]='LEGALLAND'
+colnames(tmax)[1]='LEGALLAND'
+
+#other_covariates
+covariates=read.csv('quarters_yields_predictors_2021_01_06.csv')
+colnames(covariates)
+
+covariates=covariates[,-c(1,3:18)]
+
+#MODIS
+modis=read.csv('Quarters_MODIS_NDVI_Data_2022_10_05.csv')
+
+
+#remove non growing seasons for NDVI
+ndvi_med=ndvi_med[,-c(2:7,22:25)]
+
+#soil water content
+soil_water=read.csv('Quarters_Soil_Moisture_Training_Data_2022_08_17.csv')
+soil_water=soil_water[,c(12, 15:21)]
+
 #soil properties
 soil=read.csv('/home/preston/OneDrive/Projects/Grassland_Carbon_Sequestration/Site_Selection/Data/quater_section_soil_land_use.csv')
 
@@ -83,12 +118,26 @@ yield_wheat_adj=aggregate(yield_wheat_adj[,2], by=list(yield_wheat_adj$LEGALLAND
 
 colnames(yield_wheat_adj)=c('LEGALLAND', 'kg_ha_adj')
 
+#merge with covariate data
+yield_wheat=merge(yield_wheat_adj, ndvi_med, by='LEGALLAND')
+yield_wheat=merge(yield_wheat, precip, by='LEGALLAND')
+yield_wheat=merge(yield_wheat, tmin, by='LEGALLAND')
+yield_wheat=merge(yield_wheat, tmax, by='LEGALLAND')
+
+#merge with covariates
+yield_wheat=merge(yield_wheat, covariates, by='LEGALLAND')
+
+#merge with soil water
+yield_wheat=merge(yield_wheat, soil_water, by='LEGALLAND')
+
 #merge with soil properties
-yield_wheat=merge(yield_wheat_adj, soil, by='LEGALLAND')
+yield_wheat=merge(yield_wheat, soil, by='LEGALLAND')
 
 #remove na
 yield_wheat=yield_wheat[!is.na(yield_wheat$kg_ha_adj),]
 yield_wheat=yield_wheat[!is.na(yield_wheat$soc),]
+yield_wheat=yield_wheat[!is.na(yield_wheat$precip),]
+yield_wheat=yield_wheat[!is.na(yield_wheat$temperature),]
 yield_wheat=yield_wheat[!is.na(yield_wheat$clay),]
 
 #remove duplicates
@@ -129,12 +178,26 @@ yield_barley_adj=aggregate(yield_barley_adj[,2], by=list(yield_barley_adj$LEGALL
 
 colnames(yield_barley_adj)=c('LEGALLAND', 'kg_ha_adj')
 
+#merge with covariate data
+yield_barley=merge(yield_barley_adj, ndvi_med, by='LEGALLAND')
+yield_barley=merge(yield_barley, precip, by='LEGALLAND')
+yield_barley=merge(yield_barley, tmin, by='LEGALLAND')
+yield_barley=merge(yield_barley, tmax, by='LEGALLAND')
+
+#merge with covariates
+yield_barley=merge(yield_barley, covariates, by='LEGALLAND')
+
+#merge with soil water
+yield_barley=merge(yield_barley, soil_water, by='LEGALLAND')
+
 #merge with soil properties
-yield_barley=merge(yield_barley_adj, soil, by='LEGALLAND')
+yield_barley=merge(yield_barley, soil, by='LEGALLAND')
 
 #remove na
 yield_barley=yield_barley[!is.na(yield_barley$kg_ha_adj),]
 yield_barley=yield_barley[!is.na(yield_barley$soc),]
+yield_barley=yield_barley[!is.na(yield_barley$precip),]
+yield_barley=yield_barley[!is.na(yield_barley$temperature),]
 yield_barley=yield_barley[!is.na(yield_barley$clay),]
 
 yield_barley=yield_barley[!duplicated(yield_barley$LEGALLAND),]
@@ -174,13 +237,26 @@ yield_canola_adj=aggregate(yield_canola_adj[,2], by=list(yield_canola_adj$LEGALL
 
 colnames(yield_canola_adj)=c('LEGALLAND', 'kg_ha_adj')
 
+#merge with covariate data
+yield_canola=merge(yield_canola_adj, ndvi_med, by='LEGALLAND')
+yield_canola=merge(yield_canola, precip, by='LEGALLAND')
+yield_canola=merge(yield_canola, tmin, by='LEGALLAND')
+yield_canola=merge(yield_canola, tmax, by='LEGALLAND')
+
+#merge with covariates
+yield_canola=merge(yield_canola, covariates, by='LEGALLAND')
+
+#merge with soil water
+yield_canola=merge(yield_canola, soil_water, by='LEGALLAND')
 
 #merge with soil properties
-yield_canola=merge(yield_canola_adj, soil, by='LEGALLAND')
+yield_canola=merge(yield_canola, soil, by='LEGALLAND')
 
 #remove na
 yield_canola=yield_canola[!is.na(yield_canola$kg_ha_adj),]
 yield_canola=yield_canola[!is.na(yield_canola$soc),]
+yield_canola=yield_canola[!is.na(yield_canola$precip),]
+yield_canola=yield_canola[!is.na(yield_canola$temperature),]
 yield_canola=yield_canola[!is.na(yield_canola$clay),]
 
 yield_canola=yield_canola[!duplicated(yield_canola$LEGALLAND),]
@@ -220,12 +296,26 @@ yield_peas_adj=aggregate(yield_peas_adj[,2], by=list(yield_peas_adj$LEGALLAND), 
 
 colnames(yield_peas_adj)=c('LEGALLAND', 'kg_ha_adj')
 
+#merge with covariate data
+yield_peas=merge(yield_peas_adj, ndvi_med, by='LEGALLAND')
+yield_peas=merge(yield_peas, precip, by='LEGALLAND')
+yield_peas=merge(yield_peas, tmin, by='LEGALLAND')
+yield_peas=merge(yield_peas, tmax, by='LEGALLAND')
+
+#merge with covariates
+yield_peas=merge(yield_peas, covariates, by='LEGALLAND')
+
+#merge with soil water
+yield_peas=merge(yield_peas, soil_water, by='LEGALLAND')
+
 #merge with soil properties
-yield_peas=merge(yield_peas_adj, soil, by='LEGALLAND')
+yield_peas=merge(yield_peas, soil, by='LEGALLAND')
 
 #remove na
 yield_peas=yield_peas[!is.na(yield_peas$kg_ha_adj),]
 yield_peas=yield_peas[!is.na(yield_peas$soc),]
+yield_peas=yield_peas[!is.na(yield_peas$precip),]
+yield_peas=yield_peas[!is.na(yield_peas$temperature),]
 yield_peas=yield_peas[!is.na(yield_peas$clay),]
 
 yield_peas=yield_peas[!duplicated(yield_peas$LEGALLAND),]
@@ -333,33 +423,6 @@ peas_effects_n=as.data.frame(peas_effects_n)
 
 
 ################Plots###################
-wheat_effects[1,1]=0.9
-
-#absolute values
-cols=c('Wheat'='red', 'Barley'='brown', 'Canola'='darkgoldenrod1', 'Peas'='blue')
-
-fixed_effects_plot <- ggplot() + xlim(c(0.8,6)) + ylim(1500, 4000) + 
-  geom_line(data=wheat_effects, aes(x=soc, y=fit, colour='Wheat'), linetype=4) +
-  geom_ribbon(data= wheat_effects, aes(x=soc, ymin=lower, ymax=upper), alpha= 0.3, fill="red") +
-  geom_line(data=barley_effects, aes(x=soc, y=fit, colour='Barley'), linetype=2) +
-  geom_ribbon(data= barley_effects, aes(x=soc, ymin=lower, ymax=upper), alpha= 0.3, fill="brown") +
-  geom_line(data=canola_effects, aes(x=soc, y=fit, colour='Canola'), linetype=1) +
-  geom_ribbon(data= canola_effects, aes(x=soc, ymin=lower, ymax=upper), alpha= 0.3, fill="darkgoldenrod1") +
-  geom_line(data=peas_effects, aes(x=soc, y=fit, colour='Peas'), linetype=3) +
-  geom_ribbon(data= peas_effects, aes(x=soc, ymin=lower, ymax=upper), alpha= 0.3, fill="blue") +
-  labs(x="Soil Organic Carbon (%)", y=expression(paste("Yield (kg ha"^"-1",")"))) +
-  scale_linetype_manual(values = c("Wheat" = 1, "Barley" = 2, "Canola" = 3, 'Peas' = 4)) +
-  scale_colour_manual(name="Crop Types",values=cols,guide = guide_legend(override.aes = list(linetype = c(4,2,1,3))))+
-  theme(text = element_text(size = 20))
-
-fixed_effects_plot
-
-setwd('/home/preston/OneDrive/Papers/Yield_Potential/Figures/RM')
-png(file=paste("Crop_Yield_Soil_Carbon", Sys.Date(), '.png', sep="_"),width=800, height=600)
-fixed_effects_plot
-dev.off()
-
-
 #normalized values
 cols=c('Wheat'='red', 'Barley'='brown', 'Canola'='darkgoldenrod1', 'Peas'='blue')
 
@@ -388,23 +451,23 @@ dev.off()
 ##############check differences by township###########
 wheat_min_vals=aggregate(yield_wheat[,c(107,3)], by=list(yield_wheat$RMNO), FUN=min)
 wheat_max_vals=aggregate(yield_wheat[,c(107,3)], by=list(yield_wheat$RMNO), FUN=max)
-wheat_max_min_yield=max_vals$kg_ha_adj-min_vals$kg_ha_adj
-wheat_max_min_soc=max_vals$soc-min_vals$soc
+wheat_max_min_yield=wheat_max_vals$kg_ha_adj-wheat_min_vals$kg_ha_adj
+wheat_max_min_soc=wheat_max_vals$soc-wheat_min_vals$soc
 
 barley_min_vals=aggregate(yield_barley[,c(107,3)], by=list(yield_barley$RMNO), FUN=min)
 barley_max_vals=aggregate(yield_barley[,c(107,3)], by=list(yield_barley$RMNO), FUN=max)
-barley_max_min_yield=max_vals$kg_ha_adj-min_vals$kg_ha_adj
-barley_max_min_soc=max_vals$soc-min_vals$soc
+barley_max_min_yield=barley_max_vals$kg_ha_adj-barley_min_vals$kg_ha_adj
+barley_max_min_soc=barley_max_vals$soc-barley_min_vals$soc
 
 canola_min_vals=aggregate(yield_canola[,c(107,3)], by=list(yield_canola$RMNO), FUN=min)
 canola_max_vals=aggregate(yield_canola[,c(107,3)], by=list(yield_canola$RMNO), FUN=max)
-canola_max_min_yield=max_vals$kg_ha_adj-min_vals$kg_ha_adj
-canola_max_min_soc=max_vals$soc-min_vals$soc
+canola_max_min_yield=canola_max_vals$kg_ha_adj-canola_min_vals$kg_ha_adj
+canola_max_min_soc=canola_max_vals$soc-canola_min_vals$soc
 
 peas_min_vals=aggregate(yield_peas[,c(107,3)], by=list(yield_peas$RMNO), FUN=min)
 peas_max_vals=aggregate(yield_peas[,c(107,3)], by=list(yield_peas$RMNO), FUN=max)
-peas_max_min_yield=max_vals$kg_ha_adj-min_vals$kg_ha_adj
-peas_max_min_soc=max_vals$soc-min_vals$soc
+peas_max_min_yield=peas_max_vals$kg_ha_adj-peas_min_vals$kg_ha_adj
+peas_max_min_soc=peas_max_vals$soc-peas_min_vals$soc
 
 
 hist(wheat_max_min_yield)
@@ -461,186 +524,3 @@ setwd('/home/preston/OneDrive/Papers/Yield_Potential/Figures/RM')
 png(file=paste("Crop_Yield_Soil_Carbon_rescaled", Sys.Date(), '.png', sep="_"),width=800, height=600)
 rescaled_fixed_effects_plot
 dev.off()
-
-#export average gain per percent SOC
-gains=c(wheat_gain, barley_gain, canola_gain, peas_gain)
-names(gains)=c("Wheat", 'Barley', 'Canola', 'Peas')
-write.csv(gains, paste("Average_Gains_Crop_Type_", Sys.Date(), '.csv', sep=""))
-
-#prices
-#https://tradingeconomics.com/commodity/canola
-#HRSW = $638.87/tonne
-#Barley = $371.27 / tonne
-#Canola = $892.80 / tonne
-#Peas  = $457 / tonne
-
-wheat_gain*637.87/1000*65
-barley_gain*371.27/1000*65
-canola_gain*892.80/1000*65
-peas_gain*457/1000*65
-
-
-wheat_gain*637.87/1000*65/((median(yield_wheat$kg_ha_adj))*637.87/1000*65)
-barley_gain*371.27/1000*65/((median(yield_barley$kg_ha_adj))*371.27/1000*65)
-canola_gain*892.80/1000*65/((median(yield_canola$kg_ha_adj))*892.80/1000*65)
-peas_gain*457/1000*65/((median(yield_peas$kg_ha_adj))*457/1000*65)
-
-
-
-##################Performance by RM##############
-wheat_data_counts=table(yield_wheat$RMNO)
-barley_data_counts=table(yield_barley$RMNO)
-canola_data_counts=table(yield_canola$RMNO)
-peas_data_counts=table(yield_peas$RMNO)
-
-quantile(wheat_data_counts)
-quantile(barley_data_counts)
-quantile(canola_data_counts)
-quantile(peas_data_counts)
-
-#drop those below 82 -> 1st percentile
-wheat_twshp=names(wheat_data_counts[wheat_data_counts>500])
-barley_twshp=names(barley_data_counts[barley_data_counts>500])
-canola_twshp=names(canola_data_counts[canola_data_counts>500])
-peas_twshp=names(peas_data_counts[peas_data_counts>500])
-
-
-#rm shapefile
-rm_shp=shapefile('/media/preston/My Book/Saskatchewan/RM_Shapefile/RM.shp')
-
-i='126'
-#Wheat SOC by RM
-wheat_model_gain=foreach(i=unique(wheat_twshp), .combine=rbind) %dopar%
-  {
-    try({
-    dat_sub=yield_wheat_norm[yield_wheat_norm$RMNO==i,]
-    model_sub=lm(kg_ha_adj~soc ,data=dat_sub)
-    model_results=c(i, model_sub$coefficients[2], median(dat_sub$soc), summary(model_sub)$coefficients[2,4])
-    names(model_results)=c('RMNO', "yield_slope", 'median_soc', 'p-value')
-    model_results
-    })
-    }
-
-wheat_model_gain=apply(wheat_model_gain, 2, FUN=as.numeric)
-wheat_model_gain=data.frame(wheat_model_gain)
-
-barley_model_gain=foreach(i=unique(barley_twshp), .combine=rbind) %dopar%
-  {
-    try({
-      dat_sub=yield_barley_norm[yield_barley_norm$RMNO==i,]
-      model_sub=lm(kg_ha_adj~soc ,data=dat_sub)
-      model_results=c(i, model_sub$coefficients[2], median(dat_sub$soc), summary(model_sub)$coefficients[2,4])
-      names(model_results)=c('RMNO', "yield_slope", 'median_soc', 'p-value')
-      model_results
-    })
-  }
-
-barley_model_gain=apply(barley_model_gain, 2, FUN=as.numeric)
-barley_model_gain=data.frame(barley_model_gain)
-
-
-canola_model_gain=foreach(i=unique(canola_twshp), .combine=rbind) %dopar%
-  {
-    try({
-      dat_sub=yield_canola_norm[yield_canola_norm$RMNO==i,]
-      model_sub=lm(kg_ha_adj~soc ,data=dat_sub)
-      model_results=c(i, model_sub$coefficients[2], median(dat_sub$soc), summary(model_sub)$coefficients[2,4])
-      names(model_results)=c('RMNO', "yield_slope", 'median_soc', 'p-value')
-      model_results
-    })
-  }
-
-canola_model_gain=apply(canola_model_gain, 2, FUN=as.numeric)
-canola_model_gain=data.frame(canola_model_gain)
-
-peas_model_gain=foreach(i=unique(peas_twshp), .combine=rbind) %dopar%
-  {
-    try({
-      dat_sub=yield_peas_norm[yield_peas_norm$RMNO==i,]
-      model_sub=lm(kg_ha_adj~soc ,data=dat_sub)
-      model_results=c(i, model_sub$coefficients[2], median(dat_sub$soc), summary(model_sub)$coefficients[2,4])
-      names(model_results)=c('RMNO', "yield_slope", 'median_soc', 'p-value')
-      model_results
-    })
-  }
-
-peas_model_gain=apply(peas_model_gain, 2, FUN=as.numeric)
-peas_model_gain=data.frame(peas_model_gain)
-
-
-#ggplot
-cols=c('Wheat'='red', 'Barley'='brown', 'Canola'='darkgoldenrod1', 'Peas'='blue')
-soc_by_rm <- ggplot() +xlim(c(1.5, 3.5)) + 
-  geom_smooth(data=wheat_model_gain, aes(x=median_soc, y=yield_slope, colour='Wheat', fill='Wheat'), linetype=4, span=2) +
-  geom_smooth(data=barley_model_gain, aes(x=median_soc, y=yield_slope,  colour='Barley', fill='Barley'), linetype=2, span=2) +
-  geom_smooth(data=canola_model_gain, aes(x=median_soc, y=yield_slope, colour='Canola', fill='Canola'), linetype=1, span=2) +
-  geom_smooth(data=peas_model_gain, aes(x=median_soc, y=yield_slope,  colour='Peas', fill='Peas'), linetype=3, span=2) +
-  labs(x="Soil Organic Carbon (%)", y=expression(paste("Yield Response (kg ha"^"-1",")"))) +
-  guides(fill=FALSE)+
-  scale_linetype_manual(values = c("Wheat" = 1, "Barley" = 2, "Canola" = 3, 'Peas' = 4)) +
-  scale_colour_manual(name="Crop Types",values=cols, guide = guide_legend(override.aes = list(linetype = c(4,2,1,3))))+
-  theme(text = element_text(size = 20))
-
-soc_by_rm
-
-setwd('/home/preston/OneDrive/Papers/Yield_Potential/Figures/RM')
-png(file=paste("Crop_Yield_Response_By_RM", Sys.Date(), '.png', sep="_"),width=800, height=600)
-soc_by_rm
-dev.off()
-
-
-# RMNO variables
-#export where negative
-wheat_model_gain$slope_type='positive'
-wheat_model_gain$slope_type[wheat_model_gain$yield_slope<0] <- 'negative'
-
-yield_testing=merge(yield_wheat_norm, wheat_model_gain, by='RMNO')
-
-boxplot(yield_testing$precip~yield_testing$slope_type, ylim=c(400, 700))
-
-
-##############temporal trend plot#########
-plot(yields_wheat_avg$x~yields_wheat_avg$Group.1)
-yields_wheat_avg
-yields_barley_avg
-yields_canola_avg
-yields_peas_avg
-
-
-#ggplot
-cols=c('Wheat'='red', 'Barley'='brown', 'Canola'='darkgoldenrod1', 'Peas'='blue')
-yields_trend <- ggplot() +
-  geom_smooth(data=yields_wheat_avg, aes(x=Year, y=Yield, colour='Wheat', fill='Wheat'), linetype=4, se=FALSE, method=lm, formula=y~x) +
-  geom_smooth(data=yields_barley_avg, aes(x=Year, y=Yield,  colour='Barley', fill='Barley'), linetype=2, , se=FALSE, method=lm, formula=y~x) +
-  geom_smooth(data=yields_canola_avg, aes(x=Year, y=Yield, colour='Canola', fill='Canola'), linetype=1, , se=FALSE, method=lm, formula=y~x) +
-  geom_smooth(data=yields_peas_avg, aes(x=Year, y=Yield, colour='Peas', fill='Peas'), linetype=1, , se=FALSE, method=lm, formula=y~x) +
-  geom_point(data=yields_wheat_avg, aes(x=Year, y=Yield, colour='Wheat', fill='Wheat')) +
-  geom_point(data=yields_barley_avg, aes(x=Year, y=Yield,  colour='Barley', fill='Barley')) +
-  geom_point(data=yields_canola_avg, aes(x=Year, y=Yield, colour='Canola', fill='Canola')) +
-  geom_point(data=yields_peas_avg, aes(x=Year, y=Yield, colour='Peas', fill='Peas')) +
-  labs(x="Year", y=expression(paste("Yield (kg ha"^"-1",")"))) +
-  guides(fill='none')+
-  scale_linetype_manual(values = c("Wheat" = 1, "Barley" = 2, "Canola" = 3, 'Peas' = 4)) +
-  scale_colour_manual(name="Crop Types",values=cols, guide = guide_legend(override.aes = list(linetype = c(4,2,1,3))))+
-  theme(text = element_text(size = 20))
-
-yields_trend
-
-setwd('/home/preston/OneDrive/Papers/Yield_Potential/Figures/RM')
-png(file=paste("Crop_Yield_Response_By_RM", Sys.Date(), '.png', sep="_"),width=800, height=600)
-soc_by_rm
-dev.off()
-
-
-
-##########bayesian code##################
-library(brms)
-
-pr = prior(normal(0, 1), class = 'b')
-model_barley=brm(kg_ha_adj_norm~soc_norm + (soc_norm||RMNO), data=yield_wheat_norm, prior=pr, cores=8)
-summary(model_barley)
-#hypothesis test
-variables(model_barley)
-
-hypothesis(model_barley, 'Intercept < Intercept + barley', class='b', alpha=0.1)
-
