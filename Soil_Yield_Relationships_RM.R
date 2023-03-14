@@ -44,41 +44,6 @@ colnames(yield_data)[3]='year'
 
 yield_data$id=paste(yield_data$LEGALLAND, yield_data$year, sep='_')
 
-#monthly NDVI
-ndvi_med=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/ndvi_med_1999_2020_monthly.csv')
-
-#climate data
-precip=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/precip_1999_2020_monthly.csv')
-tmin=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/tmin_1999_2020_monthly.csv')
-tmax=read.csv('/home/preston/OneDrive/Papers/Yield_Potential/Data/Satellite_Data/tmax_1999_2020_monthly.csv')
-
-ndvi_med=ndvi_med[,-1]
-precip=precip[,-1]
-tmin=tmin[,-1]
-tmax=tmax[,-1]
-
-colnames(ndvi_med)[1]='LEGALLAND'
-colnames(precip)[1]='LEGALLAND'
-colnames(tmin)[1]='LEGALLAND'
-colnames(tmax)[1]='LEGALLAND'
-
-#other_covariates
-covariates=read.csv('quarters_yields_predictors_2021_01_06.csv')
-colnames(covariates)
-
-covariates=covariates[,-c(1,3:18)]
-
-#MODIS
-modis=read.csv('Quarters_MODIS_NDVI_Data_2022_10_05.csv')
-
-
-#remove non growing seasons for NDVI
-ndvi_med=ndvi_med[,-c(2:7,22:25)]
-
-#soil water content
-soil_water=read.csv('Quarters_Soil_Moisture_Training_Data_2022_08_17.csv')
-soil_water=soil_water[,c(12, 15:21)]
-
 #soil properties
 soil=read.csv('/home/preston/OneDrive/Projects/Grassland_Carbon_Sequestration/Site_Selection/Data/quater_section_soil_land_use.csv')
 
