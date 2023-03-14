@@ -83,26 +83,12 @@ yield_wheat_adj=aggregate(yield_wheat_adj[,2], by=list(yield_wheat_adj$LEGALLAND
 
 colnames(yield_wheat_adj)=c('LEGALLAND', 'kg_ha_adj')
 
-#merge with covariate data
-yield_wheat=merge(yield_wheat_adj, ndvi_med, by='LEGALLAND')
-yield_wheat=merge(yield_wheat, precip, by='LEGALLAND')
-yield_wheat=merge(yield_wheat, tmin, by='LEGALLAND')
-yield_wheat=merge(yield_wheat, tmax, by='LEGALLAND')
-
-#merge with covariates
-yield_wheat=merge(yield_wheat, covariates, by='LEGALLAND')
-
-#merge with soil water
-yield_wheat=merge(yield_wheat, soil_water, by='LEGALLAND')
-
 #merge with soil properties
 yield_wheat=merge(yield_wheat, soil, by='LEGALLAND')
 
 #remove na
 yield_wheat=yield_wheat[!is.na(yield_wheat$kg_ha_adj),]
 yield_wheat=yield_wheat[!is.na(yield_wheat$soc),]
-yield_wheat=yield_wheat[!is.na(yield_wheat$precip),]
-yield_wheat=yield_wheat[!is.na(yield_wheat$temperature),]
 yield_wheat=yield_wheat[!is.na(yield_wheat$clay),]
 
 #remove duplicates
@@ -143,26 +129,12 @@ yield_barley_adj=aggregate(yield_barley_adj[,2], by=list(yield_barley_adj$LEGALL
 
 colnames(yield_barley_adj)=c('LEGALLAND', 'kg_ha_adj')
 
-#merge with covariate data
-yield_barley=merge(yield_barley_adj, ndvi_med, by='LEGALLAND')
-yield_barley=merge(yield_barley, precip, by='LEGALLAND')
-yield_barley=merge(yield_barley, tmin, by='LEGALLAND')
-yield_barley=merge(yield_barley, tmax, by='LEGALLAND')
-
-#merge with covariates
-yield_barley=merge(yield_barley, covariates, by='LEGALLAND')
-
-#merge with soil water
-yield_barley=merge(yield_barley, soil_water, by='LEGALLAND')
-
 #merge with soil properties
 yield_barley=merge(yield_barley, soil, by='LEGALLAND')
 
 #remove na
 yield_barley=yield_barley[!is.na(yield_barley$kg_ha_adj),]
 yield_barley=yield_barley[!is.na(yield_barley$soc),]
-yield_barley=yield_barley[!is.na(yield_barley$precip),]
-yield_barley=yield_barley[!is.na(yield_barley$temperature),]
 yield_barley=yield_barley[!is.na(yield_barley$clay),]
 
 yield_barley=yield_barley[!duplicated(yield_barley$LEGALLAND),]
@@ -202,17 +174,6 @@ yield_canola_adj=aggregate(yield_canola_adj[,2], by=list(yield_canola_adj$LEGALL
 
 colnames(yield_canola_adj)=c('LEGALLAND', 'kg_ha_adj')
 
-#merge with covariate data
-yield_canola=merge(yield_canola_adj, ndvi_med, by='LEGALLAND')
-yield_canola=merge(yield_canola, precip, by='LEGALLAND')
-yield_canola=merge(yield_canola, tmin, by='LEGALLAND')
-yield_canola=merge(yield_canola, tmax, by='LEGALLAND')
-
-#merge with covariates
-yield_canola=merge(yield_canola, covariates, by='LEGALLAND')
-
-#merge with soil water
-yield_canola=merge(yield_canola, soil_water, by='LEGALLAND')
 
 #merge with soil properties
 yield_canola=merge(yield_canola, soil, by='LEGALLAND')
@@ -220,8 +181,6 @@ yield_canola=merge(yield_canola, soil, by='LEGALLAND')
 #remove na
 yield_canola=yield_canola[!is.na(yield_canola$kg_ha_adj),]
 yield_canola=yield_canola[!is.na(yield_canola$soc),]
-yield_canola=yield_canola[!is.na(yield_canola$precip),]
-yield_canola=yield_canola[!is.na(yield_canola$temperature),]
 yield_canola=yield_canola[!is.na(yield_canola$clay),]
 
 yield_canola=yield_canola[!duplicated(yield_canola$LEGALLAND),]
@@ -261,26 +220,12 @@ yield_peas_adj=aggregate(yield_peas_adj[,2], by=list(yield_peas_adj$LEGALLAND), 
 
 colnames(yield_peas_adj)=c('LEGALLAND', 'kg_ha_adj')
 
-#merge with covariate data
-yield_peas=merge(yield_peas_adj, ndvi_med, by='LEGALLAND')
-yield_peas=merge(yield_peas, precip, by='LEGALLAND')
-yield_peas=merge(yield_peas, tmin, by='LEGALLAND')
-yield_peas=merge(yield_peas, tmax, by='LEGALLAND')
-
-#merge with covariates
-yield_peas=merge(yield_peas, covariates, by='LEGALLAND')
-
-#merge with soil water
-yield_peas=merge(yield_peas, soil_water, by='LEGALLAND')
-
 #merge with soil properties
 yield_peas=merge(yield_peas, soil, by='LEGALLAND')
 
 #remove na
 yield_peas=yield_peas[!is.na(yield_peas$kg_ha_adj),]
 yield_peas=yield_peas[!is.na(yield_peas$soc),]
-yield_peas=yield_peas[!is.na(yield_peas$precip),]
-yield_peas=yield_peas[!is.na(yield_peas$temperature),]
 yield_peas=yield_peas[!is.na(yield_peas$clay),]
 
 yield_peas=yield_peas[!duplicated(yield_peas$LEGALLAND),]
